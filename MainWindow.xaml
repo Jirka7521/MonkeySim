@@ -14,6 +14,9 @@
             <wpfToolkit:DoubleUpDown Name="heightNumericUpDown" Minimum="1" Maximum="5000" Value="5" ValueChanged="HeightNumericUpDown_ValueChanged" Margin="0,0,0,10" />
             <TextBlock Text="Vzdálenost střelce (m)" Margin="0,0,0,5" />
             <wpfToolkit:DoubleUpDown Name="distanceNumericUpDown" Minimum="1" Maximum="5000" Value="10" ValueChanged="DistanceNumericUpDown_ValueChanged" Margin="0,0,0,10" />
+            <TextBlock Text="Gravitační zrychlení (m/s²)" Margin="0,0,0,5" />
+            <wpfToolkit:DoubleUpDown Name="gravityNumericUpDown" Minimum="1" Maximum="20" Value="9.81" Margin="0,0,0,10" />
+            <Button Content="Run Simulation" Click="UpdateSimulation_Click" Margin="0,10,0,0" />
             <TextBlock Name="errorTextBlock" Foreground="Red" Margin="0,10,0,0" />
         </StackPanel>
     </Grid>

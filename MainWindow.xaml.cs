@@ -8,6 +8,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using Xceed.Wpf.Toolkit;
 
 
@@ -19,22 +20,114 @@ namespace MonkeySim;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private double monkeyHeight = 5; // Default value in meters
-    private double shooterDistance = 10; // Default value in meters
+        private double monkeyHeight = 5; // Default value in meters
+        private double shooterDistance = 10; // Default value in meters
+        private double gravity = 9.81; // Default value in m/s²
 
-    // Scaling factors for coordinate system
-    private double xScale = 20; // pixels per meter
-    private double yScale = 20; // pixels per meter
-    private double xMargin = 60;
-    private double yMargin = 40;
+        // Scaling factors for coordinate system
+        private double xScale = 20; // pixels per meter
+        private double yScale = 20; // pixels per meter
+        private double xMargin = 60;
+        private double yMargin = 40;
+    private DispatcherTimer animationTimer;
+    private double timeElapsed;
+    private double initialVelocity;
+    private double stoneX, stoneY;
+    private double monkeyY;
 
     public MainWindow()
     {
         InitializeComponent();
         DrawScene();
+        InitializeAnimation();
     }
 
-    private void DrawScene()
+    private void InitializeAnimation()
+    {
+        animationTimer = new DispatcherTimer();
+        animationTimer.Interval = TimeSpan.FromMilliseconds(20);
+        animationTimer.Tick += AnimationTimer_Tick;
+    }
+
+    private void AnimationTimer_Tick(object sender, EventArgs e)
+    {
+        timeElapsed += animationTimer.Interval.TotalSeconds;
+
+        // Update stone position
+        stoneX = initialVelocity * timeElapsed;
+        stoneY = initialVelocity * timeElapsed - 0.5 * gravity * Math.Pow(timeElapsed, 2);
+
+        // Update monkey position
+        monkeyY = monkeyHeight - 0.5 * gravity * Math.Pow(timeElapsed, 2);
+
+        // Check for collision
+        if (stoneX >= shooterDistance && stoneY <= monkeyY)
+        {
+            animationTimer.Stop();
+            //MessageBox.Show("The stone hit the monkey!");
+            return;
+        }
+
+        DrawScene(false);
+        DrawStone(stoneX, stoneY);
+        DrawMonkey(shooterDistance * xScale + xMargin, monkeyY, simulationCanvas.ActualHeight - yMargin, false);
+    }
+
+    private void DrawStone(double x, double y)
+    {
+        Ellipse stone = new Ellipse
+        {
+            Width = 10,
+            Height = 10,
+            Fill = Brushes.Gray
+        };
+        Canvas.SetLeft(stone, xMargin + x * xScale - 5);
+        Canvas.SetTop(stone, simulationCanvas.ActualHeight - yMargin - y * yScale - 5);
+        simulationCanvas.Children.Add(stone);
+    }
+
+    private void UpdateSimulation_Click(object sender, RoutedEventArgs e)
+    {
+        // Validate inputs
+        if (heightNumericUpDown.Value.HasValue && distanceNumericUpDown.Value.HasValue && gravityNumericUpDown.Value.HasValue)
+        {
+            double height = heightNumericUpDown.Value.Value;
+            double distance = distanceNumericUpDown.Value.Value;
+            double gravity = gravityNumericUpDown.Value.Value;
+
+            if (height >= 1 && distance >= 1 && gravity >= 1)
+            {
+                monkeyHeight = height;
+                shooterDistance = distance;
+                this.gravity = gravity;
+
+                DrawScene(false); // Draw scene without the monkey
+                StartAnimation();
+                errorTextBlock.Text = string.Empty;
+            }
+            else
+            {
+                errorTextBlock.Text = "Height, distance, and gravity must be at least 1.";
+            }
+        }
+        else
+        {
+            errorTextBlock.Text = "Please enter valid numbers.";
+        }
+    }
+
+    private void StartAnimation()
+    {
+        timeElapsed = 0;
+        initialVelocity = shooterDistance / Math.Sqrt(2 * monkeyHeight / gravity);
+        stoneX = 0;
+        stoneY = 0;
+        monkeyY = monkeyHeight;
+
+        animationTimer.Start();
+    }
+
+    private void DrawScene(bool drawMonkey = true)
     {
         // Clear the canvas before redrawing
         simulationCanvas.Children.Clear();
@@ -119,164 +212,220 @@ public partial class MainWindow : Window
 
         // Draw the hunter (shooter)
         DrawShooter(xMargin, canvasHeight - yMargin);
-        // Draw the monkey
-        DrawMonkey(xMargin + shooterDistance * xScale, monkeyHeight, canvasHeight - yMargin);
-    }
 
-    private void DrawAxes(double canvasWidth, double canvasHeight, double maxX, double maxY)
-    {
-        // Y-axis
-        Line yAxis = new Line
+        // Draw the monkey if required
+        if (drawMonkey)
         {
-            X1 = xMargin,
-            Y1 = canvasHeight - yMargin,
-            X2 = xMargin,
-            Y2 = 10,
-            Stroke = Brushes.Black,
-            StrokeThickness = 2
-        };
-        simulationCanvas.Children.Add(yAxis);
-
-        // X-axis
-        Line xAxis = new Line
-        {
-            X1 = xMargin,
-            Y1 = canvasHeight - yMargin,
-            X2 = canvasWidth - 10,
-            Y2 = canvasHeight - yMargin,
-            Stroke = Brushes.Black,
-            StrokeThickness = 2
-        };
-        simulationCanvas.Children.Add(xAxis);
-
-        // Draw x-axis markers
-        int xInterval = DetermineInterval(maxX);
-        for (int x = 0; x <= (int)maxX; x += xInterval)
-        {
-            if (x == 0) continue; // Skip origin
-
-            double xPos = xMargin + x * xScale;
-
-            // Tick mark
-            Line tick = new Line
-            {
-                X1 = xPos,
-                Y1 = canvasHeight - yMargin,
-                X2 = xPos,
-                Y2 = canvasHeight - yMargin + 5,
-                Stroke = Brushes.Black,
-                StrokeThickness = 1
-            };
-            simulationCanvas.Children.Add(tick);
-
-            // Label
-            TextBlock label = new TextBlock
-            {
-                Text = x.ToString(),
-                FontSize = 10
-            };
-            Canvas.SetLeft(label, xPos - 5);
-            Canvas.SetTop(label, canvasHeight - yMargin + 7);
-            simulationCanvas.Children.Add(label);
-        }
-
-        // Draw y-axis markers
-        int yInterval = DetermineInterval(maxY);
-        for (int y = 0; y <= (int)maxY; y += yInterval)
-        {
-            if (y == 0) continue; // Skip origin
-
-            double yPos = canvasHeight - yMargin - y * yScale;
-
-            // Tick mark
-            Line tick = new Line
-            {
-                X1 = xMargin,
-                Y1 = yPos,
-                X2 = xMargin - 5,
-                Y2 = yPos,
-                Stroke = Brushes.Black,
-                StrokeThickness = 1
-            };
-            simulationCanvas.Children.Add(tick);
-
-            // Label
-            TextBlock label = new TextBlock
-            {
-                Text = y.ToString(),
-                FontSize = 10
-            };
-            Canvas.SetLeft(label, xMargin - 25);
-            Canvas.SetTop(label, yPos - 7);
-            simulationCanvas.Children.Add(label);
-        }
-
-        // Axis labels
-        TextBlock xAxisLabel = new TextBlock
-        {
-            Text = "Vzdálenost (m)",
-            FontSize = 12,
-            FontWeight = FontWeights.Bold
-        };
-        Canvas.SetLeft(xAxisLabel, canvasWidth / 2);
-        Canvas.SetTop(xAxisLabel, canvasHeight - 20);
-        simulationCanvas.Children.Add(xAxisLabel);
-
-        TextBlock yAxisLabel = new TextBlock
-        {
-            Text = "Výška (m)",
-            FontSize = 12,
-            FontWeight = FontWeights.Bold,
-            RenderTransform = new RotateTransform(-90)
-        };
-        Canvas.SetLeft(yAxisLabel, 10);
-        Canvas.SetTop(yAxisLabel, canvasHeight / 2);
-        simulationCanvas.Children.Add(yAxisLabel);
-    }
-
-    private int DetermineInterval(double maxValue)
-    {
-        if (maxValue <= 10) return 1;
-        if (maxValue <= 20) return 2;
-        if (maxValue <= 50) return 5;
-        if (maxValue <= 100) return 10;
-        if (maxValue <= 500) return 50;
-        if (maxValue <= 1000) return 100;
-        if (maxValue <= 5000) return 250;
-        return 1000;
-    }
-
-    private void UpdateSimulation_Click(object sender, RoutedEventArgs e)
-    {
-        // Validate inputs
-        if (heightNumericUpDown.Value.HasValue && distanceNumericUpDown.Value.HasValue)
-        {
-            double height = heightNumericUpDown.Value.Value;
-            double distance = distanceNumericUpDown.Value.Value;
-
-            if (height >= 1 && distance >= 1)
-            {
-                monkeyHeight = height;
-                shooterDistance = distance;
-                DrawScene();
-                errorTextBlock.Text = string.Empty;
-            }
-            else
-            {
-                errorTextBlock.Text = "Both height and distance must be at least 1.";
-            }
+            DrawMonkey(xMargin + shooterDistance * xScale, monkeyHeight, canvasHeight - yMargin, true);
         }
         else
         {
-            errorTextBlock.Text = "Please enter valid numbers.";
+            double monkeyScale = Math.Min(30, Math.Max(15, Math.Min(xScale, yScale) * 0.75));
+            double treeX = xMargin + shooterDistance * xScale + monkeyScale * 0.5;
+            DrawTree(treeX, monkeyHeight * yScale, canvasHeight - yMargin);
         }
     }
 
+        private void DrawAxes(double canvasWidth, double canvasHeight, double maxX, double maxY)
+        {
+            // Y-axis
+            Line yAxis = new Line
+            {
+                X1 = xMargin,
+                Y1 = canvasHeight - yMargin,
+                X2 = xMargin,
+                Y2 = 10,
+                Stroke = Brushes.Black,
+                StrokeThickness = 2
+            };
+            simulationCanvas.Children.Add(yAxis);
 
+            // X-axis
+            Line xAxis = new Line
+            {
+                X1 = xMargin,
+                Y1 = canvasHeight - yMargin,
+                X2 = canvasWidth - 10,
+                Y2 = canvasHeight - yMargin,
+                Stroke = Brushes.Black,
+                StrokeThickness = 2
+            };
+            simulationCanvas.Children.Add(xAxis);
+
+            // Draw x-axis markers
+            int xInterval = DetermineInterval(maxX);
+            for (int x = 0; x <= (int)maxX; x += xInterval)
+            {
+                if (x == 0) continue; // Skip origin
+
+                double xPos = xMargin + x * xScale;
+
+                // Tick mark
+                Line tick = new Line
+                {
+                    X1 = xPos,
+                    Y1 = canvasHeight - yMargin,
+                    X2 = xPos,
+                    Y2 = canvasHeight - yMargin + 5,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1
+                };
+                simulationCanvas.Children.Add(tick);
+
+                // Label
+                TextBlock label = new TextBlock
+                {
+                    Text = x.ToString(),
+                    FontSize = 10
+                };
+                Canvas.SetLeft(label, xPos - 5);
+                Canvas.SetTop(label, canvasHeight - yMargin + 7);
+                simulationCanvas.Children.Add(label);
+            }
+
+            // Draw y-axis markers
+            int yInterval = DetermineInterval(maxY);
+            for (int y = 0; y <= (int)maxY; y += yInterval)
+            {
+                if (y == 0) continue; // Skip origin
+
+                double yPos = canvasHeight - yMargin - y * yScale;
+
+                // Tick mark
+                Line tick = new Line
+                {
+                    X1 = xMargin,
+                    Y1 = yPos,
+                    X2 = xMargin - 5,
+                    Y2 = yPos,
+                    Stroke = Brushes.Black,
+                    StrokeThickness = 1
+                };
+                simulationCanvas.Children.Add(tick);
+
+                // Label
+                TextBlock label = new TextBlock
+                {
+                    Text = y.ToString(),
+                    FontSize = 10
+                };
+                Canvas.SetLeft(label, xMargin - 25);
+                Canvas.SetTop(label, yPos - 7);
+                simulationCanvas.Children.Add(label);
+            }
+
+            // Axis labels
+            TextBlock xAxisLabel = new TextBlock
+            {
+                Text = "Vzdálenost (m)",
+                FontSize = 12,
+                FontWeight = FontWeights.Bold
+            };
+            Canvas.SetLeft(xAxisLabel, canvasWidth / 2);
+            Canvas.SetTop(xAxisLabel, canvasHeight - 20);
+            simulationCanvas.Children.Add(xAxisLabel);
+
+            TextBlock yAxisLabel = new TextBlock
+            {
+                Text = "Výška (m)",
+                FontSize = 12,
+                FontWeight = FontWeights.Bold,
+                RenderTransform = new RotateTransform(-90)
+            };
+            Canvas.SetLeft(yAxisLabel, 10);
+            Canvas.SetTop(yAxisLabel, canvasHeight / 2);
+            simulationCanvas.Children.Add(yAxisLabel);
+        }
+
+        private int DetermineInterval(double maxValue)
+        {
+            if (maxValue <= 10) return 1;
+            if (maxValue <= 20) return 2;
+            if (maxValue <= 50) return 5;
+            if (maxValue <= 100) return 10;
+            if (maxValue <= 500) return 50;
+            if (maxValue <= 1000) return 100;
+            if (maxValue <= 5000) return 250;
+            return 1000;
+        }
+
+        //private void UpdateSimulation_Click(object sender, RoutedEventArgs e)
+        //{
+        //    // Validate inputs
+        //    if (heightNumericUpDown.Value.HasValue && distanceNumericUpDown.Value.HasValue && gravityNumericUpDown.Value.HasValue)
+        //    {
+        //        double height = heightNumericUpDown.Value.Value;
+        //        double distance = distanceNumericUpDown.Value.Value;
+        //        double gravity = gravityNumericUpDown.Value.Value;
+
+        //        if (height >= 1 && distance >= 1 && gravity >= 1)
+        //        {
+        //            monkeyHeight = height;
+        //            shooterDistance = distance;
+        //            this.gravity = gravity;
+
+        //            DrawScene();
+        //            DrawSimulation();
+        //            errorTextBlock.Text = string.Empty;
+        //        }
+        //        else
+        //        {
+        //            errorTextBlock.Text = "Height, distance, and gravity must be at least 1.";
+        //        }
+        //    }
+        //    else
+        //    {
+        //        errorTextBlock.Text = "Please enter valid numbers.";
+        //    }
+        //}
+
+        private void DrawSimulation()
+        {
+            double height = heightNumericUpDown.Value ?? 0;
+            double distance = distanceNumericUpDown.Value ?? 0;
+            double gravity = gravityNumericUpDown.Value ?? 0;
+
+            // Create an instance of the calculate class
+            var calculator = new calculate();
+
+            // Calculate the trajectory
+            calculator.calculateFlow(height, gravity, distance, out System.Drawing.Point[] bullet, out double[] monkeyHeights);
+
+            // Draw the bullet trajectory
+            //for (int i = 0; i < bullet.Length - 1; i++)
+            //{
+            //    Line bulletTrajectory = new Line
+            //    {
+            //        X1 = xMargin + bullet[i].X * xScale,
+            //        Y1 = yMargin + bullet[i].Y * yScale,
+            //        X2 = xMargin + bullet[i + 1].X * xScale,
+            //        Y2 = yMargin + bullet[i + 1].Y * yScale,
+            //        Stroke = Brushes.Black,
+            //        StrokeThickness = 2
+            //    };
+            //    simulationCanvas.Children.Add(bulletTrajectory);
+            //}
+
+            // Draw the monkey's path
+            for (int i = 0; i < monkeyHeights.Length - 1; i++)
+            {
+                Line monkeyPath = new Line
+                {
+                    X1 = xMargin + distance * xScale,
+                    Y1 = simulationCanvas.ActualHeight - yMargin - monkeyHeights[i] * yScale,
+                    X2 = xMargin + distance * xScale,
+                    Y2 = simulationCanvas.ActualHeight - yMargin - monkeyHeights[i + 1] * yScale,
+                    Stroke = Brushes.Brown,
+                    StrokeThickness = 2
+                };
+                simulationCanvas.Children.Add(monkeyPath);
+            }
+        }
 
     private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
-    {
-        DrawScene();
+        {
+
+            DrawScene();
     }
     /// <summary>
     /// Draw the shooter (hunter) on the canvas
@@ -473,13 +622,16 @@ public partial class MainWindow : Window
 
         simulationCanvas.Children.Add(hat);
     }
-    private void DrawMonkey(double x, double treeHeight, double groundY)
+    private void DrawMonkey(double x, double treeHeight, double groundY, bool drawTree)
     {
         double monkeyScale = Math.Min(30, Math.Max(15, Math.Min(xScale, yScale) * 0.75));
 
-        // Position tree behind the monkey - move it a bit to the right
-        double treeX = x + monkeyScale * 0.5;
-        DrawTree(treeX, treeHeight * yScale, groundY);
+        if (drawTree)
+        {
+            // Position tree behind the monkey - move it a bit to the right
+            double treeX = x + monkeyScale * 0.5;
+            DrawTree(treeX, treeHeight * yScale, groundY);
+        }
 
         // Calculate branch position
         double branchY = groundY - treeHeight * yScale * 0.85;
