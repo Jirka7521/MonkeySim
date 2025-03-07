@@ -8,6 +8,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Xceed.Wpf.Toolkit;
+
 
 namespace MonkeySim;
 
@@ -119,7 +121,6 @@ public partial class MainWindow : Window
         DrawShooter(xMargin, canvasHeight - yMargin);
         // Draw the monkey
         DrawMonkey(xMargin + shooterDistance * xScale, monkeyHeight, canvasHeight - yMargin);
-
     }
 
     private void DrawAxes(double canvasWidth, double canvasHeight, double maxX, double maxY)
@@ -239,15 +240,20 @@ public partial class MainWindow : Window
         if (maxValue <= 20) return 2;
         if (maxValue <= 50) return 5;
         if (maxValue <= 100) return 10;
-        return 20;
+        if (maxValue <= 500) return 50;
+        if (maxValue <= 1000) return 100;
+        if (maxValue <= 5000) return 250;
+        return 1000;
     }
 
     private void UpdateSimulation_Click(object sender, RoutedEventArgs e)
     {
         // Validate inputs
-        if (double.TryParse(heightTextBox.Text, out double height) &&
-            double.TryParse(distanceTextBox.Text, out double distance))
+        if (heightNumericUpDown.Value.HasValue && distanceNumericUpDown.Value.HasValue)
         {
+            double height = heightNumericUpDown.Value.Value;
+            double distance = distanceNumericUpDown.Value.Value;
+
             if (height >= 1 && distance >= 1)
             {
                 monkeyHeight = height;
@@ -265,6 +271,8 @@ public partial class MainWindow : Window
             errorTextBlock.Text = "Please enter valid numbers.";
         }
     }
+
+
 
     private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -994,6 +1002,23 @@ public partial class MainWindow : Window
             Canvas.SetLeft(grass, x - grassWidth / 2 + offsetX);
             Canvas.SetTop(grass, groundY - grassHeight * 0.8);
             simulationCanvas.Children.Add(grass);
+        }
+    }
+    private void HeightNumericUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (heightNumericUpDown.Value.HasValue)
+        {
+            monkeyHeight = heightNumericUpDown.Value.Value;
+            DrawScene();
+        }
+    }
+
+    private void DistanceNumericUpDown_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (distanceNumericUpDown.Value.HasValue)
+        {
+            shooterDistance = distanceNumericUpDown.Value.Value;
+            DrawScene();
         }
     }
 }
