@@ -469,16 +469,20 @@ public partial class MainWindow : Window
     {
         double monkeyScale = Math.Min(30, Math.Max(15, Math.Min(xScale, yScale) * 0.75));
 
-        // Draw tree first so it appears behind the monkey
-        //DrawTree(x, treeHeight, groundY);
+        // Position tree behind the monkey - move it a bit to the right
+        double treeX = x + monkeyScale * 0.5;
+        DrawTree(treeX, treeHeight * yScale, groundY);
 
-        // Get branch parameters
-        double branchHeight = treeHeight * 0.85; // Position branch higher on trunk
-        double branchY = groundY - branchHeight;
+        // Calculate branch position
+        double branchY = groundY - treeHeight * yScale * 0.85;
         double branchThickness = Math.Min(40, Math.Max(20, treeHeight / 8)) * 0.35;
+        double trunkWidth = Math.Min(40, Math.Max(20, treeHeight * yScale / 8));
+        double branchWidth = trunkWidth * 2.5;
 
-        // Position monkey at the specified height (monkeyHeight * yScale) from ground
-        double monkeyY = groundY - monkeyHeight * yScale;
+        // Position monkey at the exact position specified (x) - now monkey is in front of tree
+        // but appears to hang from the branch
+        double monkeyX = x;
+        double monkeyY = branchY + branchThickness;
 
         // Monkey body
         double bodyWidth = monkeyScale * 0.8;
@@ -492,8 +496,8 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 1
         };
-        Canvas.SetLeft(body, x - bodyWidth / 2);
-        Canvas.SetTop(body, monkeyY); // Position at correct height
+        Canvas.SetLeft(body, monkeyX - bodyWidth / 2);
+        Canvas.SetTop(body, monkeyY); // Position below branch
         simulationCanvas.Children.Add(body);
 
         // Monkey head
@@ -507,7 +511,7 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 1
         };
-        Canvas.SetLeft(head, x - headSize / 2);
+        Canvas.SetLeft(head, monkeyX - headSize / 2);
         Canvas.SetTop(head, monkeyY - headSize * 0.8);
         simulationCanvas.Children.Add(head);
 
@@ -520,7 +524,7 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 0.5
         };
-        Canvas.SetLeft(face, x - headSize * 0.35);
+        Canvas.SetLeft(face, monkeyX - headSize * 0.35);
         Canvas.SetTop(face, monkeyY - headSize * 0.7);
         simulationCanvas.Children.Add(face);
 
@@ -536,7 +540,7 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 0.5
         };
-        Canvas.SetLeft(leftEye, x - headSize * 0.25);
+        Canvas.SetLeft(leftEye, monkeyX - headSize * 0.25);
         Canvas.SetTop(leftEye, monkeyY - headSize * 0.65);
         simulationCanvas.Children.Add(leftEye);
 
@@ -547,7 +551,7 @@ public partial class MainWindow : Window
             Height = eyeSize * 0.6,
             Fill = Brushes.Black
         };
-        Canvas.SetLeft(leftPupil, x - headSize * 0.25 + eyeSize * 0.2);
+        Canvas.SetLeft(leftPupil, monkeyX - headSize * 0.25 + eyeSize * 0.2);
         Canvas.SetTop(leftPupil, monkeyY - headSize * 0.65 + eyeSize * 0.2);
         simulationCanvas.Children.Add(leftPupil);
 
@@ -560,7 +564,7 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 0.5
         };
-        Canvas.SetLeft(rightEye, x + headSize * 0.1);
+        Canvas.SetLeft(rightEye, monkeyX + headSize * 0.1);
         Canvas.SetTop(rightEye, monkeyY - headSize * 0.65);
         simulationCanvas.Children.Add(rightEye);
 
@@ -571,7 +575,7 @@ public partial class MainWindow : Window
             Height = eyeSize * 0.6,
             Fill = Brushes.Black
         };
-        Canvas.SetLeft(rightPupil, x + headSize * 0.1 + eyeSize * 0.2);
+        Canvas.SetLeft(rightPupil, monkeyX + headSize * 0.1 + eyeSize * 0.2);
         Canvas.SetTop(rightPupil, monkeyY - headSize * 0.65 + eyeSize * 0.2);
         simulationCanvas.Children.Add(rightPupil);
 
@@ -585,10 +589,10 @@ public partial class MainWindow : Window
         PathGeometry mouthGeometry = new PathGeometry();
         PathFigure mouthFigure = new PathFigure();
 
-        mouthFigure.StartPoint = new Point(x - headSize * 0.15, monkeyY - headSize * 0.45);
+        mouthFigure.StartPoint = new Point(monkeyX - headSize * 0.15, monkeyY - headSize * 0.45);
         ArcSegment arc = new ArcSegment
         {
-            Point = new Point(x + headSize * 0.15, monkeyY - headSize * 0.45),
+            Point = new Point(monkeyX + headSize * 0.15, monkeyY - headSize * 0.45),
             Size = new Size(headSize * 0.2, headSize * 0.1),
             SweepDirection = SweepDirection.Clockwise
         };
@@ -609,7 +613,7 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 0.5
         };
-        Canvas.SetLeft(leftEar, x - headSize * 0.5 - earSize * 0.3);
+        Canvas.SetLeft(leftEar, monkeyX - headSize * 0.5 - earSize * 0.3);
         Canvas.SetTop(leftEar, monkeyY - headSize * 0.7);
         simulationCanvas.Children.Add(leftEar);
 
@@ -622,15 +626,14 @@ public partial class MainWindow : Window
             Stroke = Brushes.Black,
             StrokeThickness = 0.5
         };
-        Canvas.SetLeft(rightEar, x + headSize * 0.5 - earSize * 0.7);
+        Canvas.SetLeft(rightEar, monkeyX + headSize * 0.5 - earSize * 0.7);
         Canvas.SetTop(rightEar, monkeyY - headSize * 0.7);
         simulationCanvas.Children.Add(rightEar);
 
-        // Arms positioned to hang onto branch
+        // Arms positioned to hang onto branch - extending toward tree
         double armWidth = bodyWidth * 0.25;
-        double armLength = bodyHeight * 0.6;
 
-        // Create arms reaching up to branch
+        // Left arm reaching up to branch
         Path leftArm = new Path
         {
             Fill = new SolidColorBrush(Color.FromRgb(139, 69, 19)),
@@ -641,16 +644,16 @@ public partial class MainWindow : Window
         PathGeometry leftArmGeometry = new PathGeometry();
         PathFigure leftArmFigure = new PathFigure();
 
-        leftArmFigure.StartPoint = new Point(x - bodyWidth * 0.3, monkeyY + bodyHeight * 0.2);
+        leftArmFigure.StartPoint = new Point(monkeyX - bodyWidth * 0.3, monkeyY + bodyHeight * 0.2);
         leftArmFigure.Segments.Add(new BezierSegment(
-            new Point(x - bodyWidth * 0.5, monkeyY),
-            new Point(x - bodyWidth * 0.4, branchY + branchThickness),
-            new Point(x - bodyWidth * 0.3, branchY + branchThickness / 2),
+            new Point(monkeyX - bodyWidth * 0.5, monkeyY),
+            new Point(monkeyX - bodyWidth * 0.2, branchY + branchThickness),
+            new Point(monkeyX - bodyWidth * 0.1, branchY + branchThickness / 2),
             true));
         leftArmFigure.Segments.Add(new BezierSegment(
-            new Point(x - bodyWidth * 0.2, branchY + branchThickness * 0.8),
-            new Point(x - bodyWidth * 0.1, monkeyY + bodyHeight * 0.1),
-            new Point(x - bodyWidth * 0.1, monkeyY + bodyHeight * 0.2),
+            new Point(monkeyX, branchY + branchThickness * 0.8),
+            new Point(monkeyX - bodyWidth * 0.1, monkeyY + bodyHeight * 0.1),
+            new Point(monkeyX - bodyWidth * 0.1, monkeyY + bodyHeight * 0.2),
             true));
 
         leftArmFigure.IsClosed = true;
@@ -658,7 +661,33 @@ public partial class MainWindow : Window
         leftArm.Data = leftArmGeometry;
         simulationCanvas.Children.Add(leftArm);
 
-        // Similar for right arm
+        // Right arm reaching up to branch - extending toward tree
+        Path rightArm = new Path
+        {
+            Fill = new SolidColorBrush(Color.FromRgb(139, 69, 19)),
+            Stroke = Brushes.Black,
+            StrokeThickness = 1
+        };
+
+        PathGeometry rightArmGeometry = new PathGeometry();
+        PathFigure rightArmFigure = new PathFigure();
+
+        rightArmFigure.StartPoint = new Point(monkeyX + bodyWidth * 0.3, monkeyY + bodyHeight * 0.2);
+        rightArmFigure.Segments.Add(new BezierSegment(
+            new Point(monkeyX + bodyWidth * 0.5, monkeyY),
+            new Point(monkeyX + bodyWidth * 0.6, branchY + branchThickness),
+            new Point(monkeyX + bodyWidth * 0.5, branchY + branchThickness / 2),
+            true));
+        rightArmFigure.Segments.Add(new BezierSegment(
+            new Point(monkeyX + bodyWidth * 0.4, branchY + branchThickness * 0.8),
+            new Point(monkeyX + bodyWidth * 0.2, monkeyY + bodyHeight * 0.1),
+            new Point(monkeyX + bodyWidth * 0.1, monkeyY + bodyHeight * 0.2),
+            true));
+
+        rightArmFigure.IsClosed = true;
+        rightArmGeometry.Figures.Add(rightArmFigure);
+        rightArm.Data = rightArmGeometry;
+        simulationCanvas.Children.Add(rightArm);
 
         // Legs hanging down
         double legWidth = bodyWidth * 0.25;
@@ -675,11 +704,25 @@ public partial class MainWindow : Window
             RadiusY = legWidth / 2,
             RenderTransform = new RotateTransform(15)
         };
-        Canvas.SetLeft(leftLeg, x - bodyWidth * 0.4);
+        Canvas.SetLeft(leftLeg, monkeyX - bodyWidth * 0.4);
         Canvas.SetTop(leftLeg, monkeyY + bodyHeight * 0.8);
         simulationCanvas.Children.Add(leftLeg);
 
-        // Similar for right leg
+        // Right leg
+        Rectangle rightLeg = new Rectangle
+        {
+            Width = legWidth,
+            Height = legLength,
+            Fill = new SolidColorBrush(Color.FromRgb(139, 69, 19)),
+            Stroke = Brushes.Black,
+            StrokeThickness = 1,
+            RadiusX = legWidth / 2,
+            RadiusY = legWidth / 2,
+            RenderTransform = new RotateTransform(-15)
+        };
+        Canvas.SetLeft(rightLeg, monkeyX + bodyWidth * 0.15);
+        Canvas.SetTop(rightLeg, monkeyY + bodyHeight * 0.8);
+        simulationCanvas.Children.Add(rightLeg);
 
         // Tail
         Path tail = new Path
@@ -692,20 +735,265 @@ public partial class MainWindow : Window
         PathGeometry tailGeometry = new PathGeometry();
         PathFigure tailFigure = new PathFigure();
 
-        tailFigure.StartPoint = new Point(x, monkeyY + bodyHeight * 0.8);
+        tailFigure.StartPoint = new Point(monkeyX, monkeyY + bodyHeight * 0.8);
 
         BezierSegment bezier = new BezierSegment
         {
-            Point1 = new Point(x + bodyWidth * 0.5, monkeyY + bodyHeight * 1.1),
-            Point2 = new Point(x + bodyWidth * 0.8, monkeyY + bodyHeight * 0.9),
-            Point3 = new Point(x + bodyWidth * 0.9, monkeyY + bodyHeight * 0.5)
+            Point1 = new Point(monkeyX + bodyWidth * 0.5, monkeyY + bodyHeight * 1.1),
+            Point2 = new Point(monkeyX + bodyWidth * 0.8, monkeyY + bodyHeight * 0.9),
+            Point3 = new Point(monkeyX + bodyWidth * 0.9, monkeyY + bodyHeight * 0.5)
         };
 
         tailFigure.Segments.Add(bezier);
         tailGeometry.Figures.Add(tailFigure);
         tail.Data = tailGeometry;
         simulationCanvas.Children.Add(tail);
+    }
+    /// <summary>
+    /// Draw a tree at the specified location with the given height
+    /// </summary>
+    /// <param name="x">The x-coordinate for the tree</param>
+    /// <param name="treeHeight">The height of the tree in scaled units</param>
+    /// <param name="groundY">The y-coordinate of the ground</param>
+    private void DrawTree(double x, double treeHeight, double groundY)
+    {
+        // Tree dimensions
+        double trunkWidth = Math.Min(40, Math.Max(20, treeHeight / 8));
+        double trunkHeight = treeHeight;
 
-        // We don't need to draw an extra branch here as it's now part of the tree
+        // Create a linear gradient brush for trunk with bark-like texture
+        LinearGradientBrush trunkBrush = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(1, 0)
+        };
+        trunkBrush.GradientStops.Add(new GradientStop(Color.FromRgb(90, 57, 23), 0.0));
+        trunkBrush.GradientStops.Add(new GradientStop(Color.FromRgb(115, 77, 38), 0.4));
+        trunkBrush.GradientStops.Add(new GradientStop(Color.FromRgb(101, 67, 33), 0.6));
+        trunkBrush.GradientStops.Add(new GradientStop(Color.FromRgb(85, 57, 23), 1.0));
+
+        // Draw trunk with texture
+        Path trunk = new Path
+        {
+            Fill = trunkBrush,
+            Stroke = Brushes.Black,
+            StrokeThickness = 1
+        };
+
+        PathGeometry trunkGeometry = new PathGeometry();
+        PathFigure trunkFigure = new PathFigure();
+
+        // Create a slightly curved trunk for more realism
+        double trunkCurve = trunkWidth * 0.15;
+
+        trunkFigure.StartPoint = new Point(x - trunkWidth / 2, groundY);
+        trunkFigure.Segments.Add(new LineSegment(new Point(x - trunkWidth / 2, groundY - trunkHeight * 0.7), true));
+        trunkFigure.Segments.Add(new BezierSegment(
+            new Point(x - trunkWidth / 2 + trunkCurve, groundY - trunkHeight * 0.85),
+            new Point(x - trunkWidth / 3, groundY - trunkHeight * 0.95),
+            new Point(x - trunkWidth / 4, groundY - trunkHeight), true));
+        trunkFigure.Segments.Add(new LineSegment(new Point(x + trunkWidth / 4, groundY - trunkHeight), true));
+        trunkFigure.Segments.Add(new BezierSegment(
+            new Point(x + trunkWidth / 3, groundY - trunkHeight * 0.95),
+            new Point(x + trunkWidth / 2 - trunkCurve, groundY - trunkHeight * 0.85),
+            new Point(x + trunkWidth / 2, groundY - trunkHeight * 0.7), true));
+        trunkFigure.Segments.Add(new LineSegment(new Point(x + trunkWidth / 2, groundY), true));
+
+        trunkFigure.IsClosed = true;
+        trunkGeometry.Figures.Add(trunkFigure);
+        trunk.Data = trunkGeometry;
+        simulationCanvas.Children.Add(trunk);
+
+        // Add trunk texture details - bark lines
+        for (int i = 0; i < 5; i++)
+        {
+            double yPos = groundY - trunkHeight * (0.2 + 0.15 * i);
+            double length = trunkWidth * (0.3 + 0.1 * (i % 3));
+            double xOffset = (i % 2 == 0) ? -length / 2 : -length / 3;
+
+            Line barkLine = new Line
+            {
+                X1 = x + xOffset,
+                Y1 = yPos,
+                X2 = x + xOffset + length,
+                Y2 = yPos,
+                Stroke = new SolidColorBrush(Color.FromRgb(75, 47, 20)),
+                StrokeThickness = 1.5
+            };
+            simulationCanvas.Children.Add(barkLine);
+        }
+
+        // Draw branches
+        double branchY = groundY - trunkHeight * 0.85;
+        double branchWidth = trunkWidth * 2.5;
+        double branchThickness = trunkWidth * 0.35;
+
+        // Branch brush with gradient
+        LinearGradientBrush branchBrush = new LinearGradientBrush
+        {
+            StartPoint = new Point(0, 0),
+            EndPoint = new Point(0, 1)
+        };
+        branchBrush.GradientStops.Add(new GradientStop(Color.FromRgb(101, 67, 33), 0.0));
+        branchBrush.GradientStops.Add(new GradientStop(Color.FromRgb(115, 77, 38), 0.5));
+        branchBrush.GradientStops.Add(new GradientStop(Color.FromRgb(90, 57, 23), 1.0));
+
+        // Main branch extending to the left (toward shooter)
+        Path mainBranch = new Path
+        {
+            Fill = branchBrush,
+            Stroke = Brushes.Black,
+            StrokeThickness = 1
+        };
+
+        PathGeometry mainBranchGeometry = new PathGeometry();
+        PathFigure mainBranchFigure = new PathFigure();
+
+        // Create a more natural curved branch
+        double branchCurve = branchThickness * 0.8;
+
+        mainBranchFigure.StartPoint = new Point(x - trunkWidth * 0.3, branchY);
+        mainBranchFigure.Segments.Add(new BezierSegment(
+            new Point(x - branchWidth * 0.4, branchY - branchCurve),
+            new Point(x - branchWidth * 0.7, branchY - branchCurve * 0.5),
+            new Point(x - branchWidth, branchY + branchThickness * 0.2), true));
+        mainBranchFigure.Segments.Add(new LineSegment(new Point(x - branchWidth, branchY + branchThickness), true));
+        mainBranchFigure.Segments.Add(new BezierSegment(
+            new Point(x - branchWidth * 0.7, branchY + branchThickness + branchCurve * 0.2),
+            new Point(x - branchWidth * 0.4, branchY + branchThickness + branchCurve * 0.1),
+            new Point(x - trunkWidth * 0.1, branchY + branchThickness), true));
+
+        mainBranchFigure.IsClosed = true;
+        mainBranchGeometry.Figures.Add(mainBranchFigure);
+        mainBranch.Data = mainBranchGeometry;
+        simulationCanvas.Children.Add(mainBranch);
+
+        // Small right branch with more natural curve
+        Path rightBranch = new Path
+        {
+            Fill = branchBrush,
+            Stroke = Brushes.Black,
+            StrokeThickness = 1
+        };
+
+        PathGeometry rightGeometry = new PathGeometry();
+        PathFigure rightFigure = new PathFigure();
+
+        rightFigure.StartPoint = new Point(x + trunkWidth * 0.1, branchY + branchThickness / 2);
+        rightFigure.Segments.Add(new BezierSegment(
+            new Point(x + trunkWidth * 0.5, branchY - branchThickness * 0.3),
+            new Point(x + trunkWidth, branchY - branchThickness * 0.5),
+            new Point(x + trunkWidth * 1.5, branchY), true));
+        rightFigure.Segments.Add(new LineSegment(new Point(x + trunkWidth * 1.5, branchY + branchThickness * 0.5), true));
+        rightFigure.Segments.Add(new BezierSegment(
+            new Point(x + trunkWidth, branchY + branchThickness * 0.1),
+            new Point(x + trunkWidth * 0.5, branchY + branchThickness * 0.3),
+            new Point(x + trunkWidth * 0.1, branchY + branchThickness), true));
+
+        rightFigure.IsClosed = true;
+        rightGeometry.Figures.Add(rightFigure);
+        rightBranch.Data = rightGeometry;
+        simulationCanvas.Children.Add(rightBranch);
+
+        // Enhanced foliage with multiple layers and better coloring
+        double foliageRadius = trunkWidth * 1.8;
+
+        // Create a radial gradient for foliage
+        RadialGradientBrush foliageBrush = new RadialGradientBrush
+        {
+            GradientOrigin = new Point(0.5, 0.3),
+            Center = new Point(0.5, 0.5),
+            RadiusX = 0.5,
+            RadiusY = 0.5
+        };
+        foliageBrush.GradientStops.Add(new GradientStop(Color.FromRgb(65, 160, 65), 0.0));
+        foliageBrush.GradientStops.Add(new GradientStop(Color.FromRgb(34, 139, 34), 0.7));
+        foliageBrush.GradientStops.Add(new GradientStop(Color.FromRgb(25, 100, 25), 1.0));
+
+        // Multiple clusters of leaves with varying sizes for volume
+        Random rand = new Random();
+        for (int i = 0; i < 5; i++)
+        {
+            double offsetX = (rand.NextDouble() * 2 - 1) * foliageRadius * 0.6;
+            double offsetY = (rand.NextDouble() * -1) * foliageRadius * 0.8;
+            double sizeVar = 0.8 + rand.NextDouble() * 0.4;
+
+            Ellipse foliage = new Ellipse
+            {
+                Width = foliageRadius * 2 * sizeVar,
+                Height = foliageRadius * 1.8 * sizeVar,
+                Fill = foliageBrush,
+                Stroke = new SolidColorBrush(Color.FromRgb(25, 100, 25)),
+                StrokeThickness = 1
+            };
+            Canvas.SetLeft(foliage, x - foliageRadius * sizeVar + offsetX);
+            Canvas.SetTop(foliage, groundY - trunkHeight - foliageRadius * 0.8 + offsetY);
+            simulationCanvas.Children.Add(foliage);
+        }
+
+        // Enhanced branch foliage
+        // Left branch foliage
+        double smallFoliageRadius = foliageRadius * 0.6;
+        RadialGradientBrush smallFoliageBrush = new RadialGradientBrush();
+        smallFoliageBrush.GradientStops.Add(new GradientStop(Color.FromRgb(65, 160, 65), 0.0));
+        smallFoliageBrush.GradientStops.Add(new GradientStop(Color.FromRgb(34, 139, 34), 0.8));
+
+        // Create multiple smaller foliage clusters around the left branch
+        for (int i = 0; i < 2; i++)
+        {
+            double offsetX = (i == 0) ? -smallFoliageRadius * 0.5 : -smallFoliageRadius * 1.2;
+            double offsetY = (i == 0) ? -smallFoliageRadius * 0.3 : -smallFoliageRadius * 0.8;
+
+            Ellipse leftFoliage = new Ellipse
+            {
+                Width = smallFoliageRadius * 2 * (0.9 + rand.NextDouble() * 0.2),
+                Height = smallFoliageRadius * 1.8 * (0.9 + rand.NextDouble() * 0.2),
+                Fill = smallFoliageBrush,
+                Stroke = Brushes.DarkGreen,
+                StrokeThickness = 1
+            };
+            Canvas.SetLeft(leftFoliage, x - branchWidth * 0.8 + offsetX);
+            Canvas.SetTop(leftFoliage, branchY - smallFoliageRadius + offsetY);
+            simulationCanvas.Children.Add(leftFoliage);
+        }
+
+        // Right branch foliage clusters
+        for (int i = 0; i < 2; i++)
+        {
+            double offsetX = (i == 0) ? smallFoliageRadius * 0.2 : smallFoliageRadius * 0.8;
+            double offsetY = (i == 0) ? -smallFoliageRadius * 0.5 : -smallFoliageRadius * 0.2;
+
+            Ellipse rightFoliage = new Ellipse
+            {
+                Width = smallFoliageRadius * (1.4 + rand.NextDouble() * 0.3),
+                Height = smallFoliageRadius * (1.2 + rand.NextDouble() * 0.3),
+                Fill = smallFoliageBrush,
+                Stroke = Brushes.DarkGreen,
+                StrokeThickness = 1
+            };
+            Canvas.SetLeft(rightFoliage, x + trunkWidth - smallFoliageRadius * 0.5 + offsetX);
+            Canvas.SetTop(rightFoliage, branchY - smallFoliageRadius * 0.8 + offsetY);
+            simulationCanvas.Children.Add(rightFoliage);
+        }
+
+        // Add some ground detail around the base of the tree
+        for (int i = 0; i < 5; i++)
+        {
+            double grassWidth = trunkWidth * (0.3 + rand.NextDouble() * 0.3);
+            double grassHeight = trunkWidth * (0.2 + rand.NextDouble() * 0.2);
+            double offsetX = trunkWidth * (rand.NextDouble() * 1.2 - 0.6);
+
+            Ellipse grass = new Ellipse
+            {
+                Width = grassWidth,
+                Height = grassHeight,
+                Fill = new SolidColorBrush(Color.FromRgb(60, 150, 60)),
+                Stroke = Brushes.DarkGreen,
+                StrokeThickness = 0.5
+            };
+            Canvas.SetLeft(grass, x - grassWidth / 2 + offsetX);
+            Canvas.SetTop(grass, groundY - grassHeight * 0.8);
+            simulationCanvas.Children.Add(grass);
+        }
     }
 }
