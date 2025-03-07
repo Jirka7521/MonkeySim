@@ -214,7 +214,7 @@ public partial class MainWindow : Window
         // Axis labels
         TextBlock xAxisLabel = new TextBlock
         {
-            Text = "Distance (m)",
+            Text = "Vzdálenost (m)",
             FontSize = 12,
             FontWeight = FontWeights.Bold
         };
@@ -224,7 +224,7 @@ public partial class MainWindow : Window
 
         TextBlock yAxisLabel = new TextBlock
         {
-            Text = "Height (m)",
+            Text = "Výška (m)",
             FontSize = 12,
             FontWeight = FontWeights.Bold,
             RenderTransform = new RotateTransform(-90)
