@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35825.156 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonkeySim", "MonkeySim.csproj", "{0B296E59-A817-4D78-90B2-28AB76C90AEB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0B296E59-A817-4D78-90B2-28AB76C90AEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0B296E59-A817-4D78-90B2-28AB76C90AEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0B296E59-A817-4D78-90B2-28AB76C90AEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0B296E59-A817-4D78-90B2-28AB76C90AEB}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5A23A21E-3528-4EDD-AFF6-3563EF3CB198}
+	EndGlobalSection
+EndGlobal
