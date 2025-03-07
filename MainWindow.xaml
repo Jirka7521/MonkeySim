@@ -7,6 +7,36 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <!-- Controls Panel -->
+        <Grid Grid.Row="0" Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Monkey Height (m):" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox x:Name="heightTextBox" Grid.Column="1" Text="5" Margin="0,0,10,0"/>
+
+            <TextBlock Grid.Column="2" Text="Shooter Distance (m):" VerticalAlignment="Center" Margin="0,0,5,0"/>
+            <TextBox x:Name="distanceTextBox" Grid.Column="3" Text="10" Margin="0,0,10,0"/>
+
+            <Button Grid.Column="4" Content="Update" Click="UpdateSimulation_Click" Padding="10,5" Margin="0,0,10,0"/>
+
+            <TextBlock x:Name="errorTextBlock" Grid.Column="5" Foreground="Red" VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Simulation Canvas with Border for better visual boundary -->
+        <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="1" Margin="10">
+            <Canvas x:Name="simulationCanvas" Background="LightBlue" SizeChanged="Canvas_SizeChanged" />
+        </Border>
     </Grid>
 </Window>
