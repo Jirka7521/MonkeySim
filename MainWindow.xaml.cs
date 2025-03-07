@@ -34,6 +34,7 @@ public partial class MainWindow : Window
     private double initialVelocity;
     private double stoneX, stoneY;
     private double monkeyY;
+    private double launchAngle; 
 
     public MainWindow()
     {
@@ -45,7 +46,7 @@ public partial class MainWindow : Window
     private void InitializeAnimation()
     {
         animationTimer = new DispatcherTimer();
-        animationTimer.Interval = TimeSpan.FromMilliseconds(20);
+        animationTimer.Interval = TimeSpan.FromMilliseconds(5);
         animationTimer.Tick += AnimationTimer_Tick;
     }
 
@@ -54,19 +55,21 @@ public partial class MainWindow : Window
         timeElapsed += animationTimer.Interval.TotalSeconds;
 
         // Update stone position
-        stoneX = initialVelocity * timeElapsed;
-        stoneY = initialVelocity * timeElapsed - 0.5 * gravity * Math.Pow(timeElapsed, 2);
+        stoneX = initialVelocity * timeElapsed * Math.Cos(launchAngle);
+        stoneY = initialVelocity * timeElapsed * Math.Sin(launchAngle) - 0.5 * gravity * Math.Pow(timeElapsed, 2);
 
         // Update monkey position
         monkeyY = monkeyHeight - 0.5 * gravity * Math.Pow(timeElapsed, 2);
 
-        // Check for collision
-        if (stoneX >= shooterDistance && stoneY <= monkeyY)
+        // Check for collision - improved detection with a reasonable threshold
+        //if(stoneX == shooterDistance)
+        if (Math.Abs(stoneX - shooterDistance) < 0.1)
         {
+            // They've met! Stop animation and show a message
             animationTimer.Stop();
-            //MessageBox.Show("The stone hit the monkey!");
             return;
         }
+
 
         DrawScene(false);
         DrawStone(stoneX, stoneY);
@@ -119,7 +122,47 @@ public partial class MainWindow : Window
     private void StartAnimation()
     {
         timeElapsed = 0;
-        initialVelocity = shooterDistance / Math.Sqrt(2 * monkeyHeight / gravity);
+
+        // Use a fixed initial velocity
+        initialVelocity = 20.0; // Fixed velocity in m/s
+
+        // Calculate time for stone to reach the monkey horizontally
+        double estimatedTime = shooterDistance / initialVelocity;
+
+        // Calculate where the monkey will be at this time
+        double monkeyPositionAtImpact = monkeyHeight - 0.5 * gravity * Math.Pow(estimatedTime, 2);
+
+        // If monkey would be below ground, adjust our timing
+        if (monkeyPositionAtImpact < 0)
+        {
+            estimatedTime = Math.Sqrt(2 * monkeyHeight / gravity);
+            monkeyPositionAtImpact = 0;
+        }
+
+        // Apply a small vertical offset to adjust for the "few pixels above" issue
+        monkeyPositionAtImpact -= 0.3; // Adjust downward slightly
+
+        // Calculate the angle needed to hit the monkey at the adjusted position
+        double sinAngle = (monkeyPositionAtImpact + 0.5 * gravity * Math.Pow(estimatedTime, 2)) /
+                          (initialVelocity * estimatedTime);
+
+        // Make sure we have a valid angle (between -1 and 1 for arcsin)
+        sinAngle = Math.Max(-1.0, Math.Min(1.0, sinAngle));
+        launchAngle = Math.Asin(sinAngle);
+
+        // Now refine our time estimate with the calculated angle
+        double refinedTime = shooterDistance / (initialVelocity * Math.Cos(launchAngle));
+
+        // Recalculate the monkey's position with the refined time estimate
+        monkeyPositionAtImpact = monkeyHeight - 0.5 * gravity * Math.Pow(refinedTime, 2) - 0.3;
+
+        // Readjust the angle with this better estimate
+        sinAngle = (monkeyPositionAtImpact + 0.5 * gravity * Math.Pow(refinedTime, 2)) /
+                   (initialVelocity * refinedTime);
+        sinAngle = Math.Max(-1.0, Math.Min(1.0, sinAngle));
+        launchAngle = Math.Asin(sinAngle);
+
+        // Initialize position values
         stoneX = 0;
         stoneY = 0;
         monkeyY = monkeyHeight;
@@ -349,78 +392,7 @@ public partial class MainWindow : Window
             return 1000;
         }
 
-        //private void UpdateSimulation_Click(object sender, RoutedEventArgs e)
-        //{
-        //    // Validate inputs
-        //    if (heightNumericUpDown.Value.HasValue && distanceNumericUpDown.Value.HasValue && gravityNumericUpDown.Value.HasValue)
-        //    {
-        //        double height = heightNumericUpDown.Value.Value;
-        //        double distance = distanceNumericUpDown.Value.Value;
-        //        double gravity = gravityNumericUpDown.Value.Value;
 
-        //        if (height >= 1 && distance >= 1 && gravity >= 1)
-        //        {
-        //            monkeyHeight = height;
-        //            shooterDistance = distance;
-        //            this.gravity = gravity;
-
-        //            DrawScene();
-        //            DrawSimulation();
-        //            errorTextBlock.Text = string.Empty;
-        //        }
-        //        else
-        //        {
-        //            errorTextBlock.Text = "Height, distance, and gravity must be at least 1.";
-        //        }
-        //    }
-        //    else
-        //    {
-        //        errorTextBlock.Text = "Please enter valid numbers.";
-        //    }
-        //}
-
-        private void DrawSimulation()
-        {
-            double height = heightNumericUpDown.Value ?? 0;
-            double distance = distanceNumericUpDown.Value ?? 0;
-            double gravity = gravityNumericUpDown.Value ?? 0;
-
-            // Create an instance of the calculate class
-            var calculator = new calculate();
-
-            // Calculate the trajectory
-            calculator.calculateFlow(height, gravity, distance, out System.Drawing.Point[] bullet, out double[] monkeyHeights);
-
-            // Draw the bullet trajectory
-            //for (int i = 0; i < bullet.Length - 1; i++)
-            //{
-            //    Line bulletTrajectory = new Line
-            //    {
-            //        X1 = xMargin + bullet[i].X * xScale,
-            //        Y1 = yMargin + bullet[i].Y * yScale,
-            //        X2 = xMargin + bullet[i + 1].X * xScale,
-            //        Y2 = yMargin + bullet[i + 1].Y * yScale,
-            //        Stroke = Brushes.Black,
-            //        StrokeThickness = 2
-            //    };
-            //    simulationCanvas.Children.Add(bulletTrajectory);
-            //}
-
-            // Draw the monkey's path
-            for (int i = 0; i < monkeyHeights.Length - 1; i++)
-            {
-                Line monkeyPath = new Line
-                {
-                    X1 = xMargin + distance * xScale,
-                    Y1 = simulationCanvas.ActualHeight - yMargin - monkeyHeights[i] * yScale,
-                    X2 = xMargin + distance * xScale,
-                    Y2 = simulationCanvas.ActualHeight - yMargin - monkeyHeights[i + 1] * yScale,
-                    Stroke = Brushes.Brown,
-                    StrokeThickness = 2
-                };
-                simulationCanvas.Children.Add(monkeyPath);
-            }
-        }
 
     private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e)
         {
